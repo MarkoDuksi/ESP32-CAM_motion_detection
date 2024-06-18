@@ -47,6 +47,15 @@
 
 int pictureNumber = 0;
 
+void go_to_deep_sleep () { 
+    // Turns off the ESP32-CAM white on-board LED (flash) connected to GPIO 4
+    pinMode(4, OUTPUT);
+    digitalWrite(4, LOW);
+    rtc_gpio_hold_en(GPIO_NUM_4);
+
+    esp_deep_sleep_start();
+ }
+
 void setup() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
 
@@ -76,23 +85,20 @@ void setup() {
     config.fb_count = 2;
 
     // Init Camera
-    if (esp_err_t err = esp_camera_init(&config); err != ESP_OK) return;
+    if (esp_err_t err = esp_camera_init(&config); err != ESP_OK) go_to_deep_sleep();
 
     // Serial.println("Starting SD Card");
-    if (!SD_MMC.begin()) return;
-
-    if (uint8_t cardType = SD_MMC.cardType(); cardType == CARD_NONE) return;
-
-    camera_fb_t *fb = NULL;
+    if (!SD_MMC.begin()) go_to_deep_sleep();
+    if (uint8_t cardType = SD_MMC.cardType(); cardType == CARD_NONE) go_to_deep_sleep();
 
     // Take Picture with Camera
-    fb = esp_camera_fb_get();
-    if (!fb) return;
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) go_to_deep_sleep();
+
+    fs::FS &fs = SD_MMC;
 
     // Path where new picture will be saved in SD Card
     String path = "/picture" + String(pictureNumber) + ".jpg";
-
-    fs::FS &fs = SD_MMC;
     File file = fs.open(path.c_str(), FILE_WRITE);
     
     if (file) {
@@ -101,13 +107,7 @@ void setup() {
     file.close();
     esp_camera_fb_return(fb);
 
-    // Turns off the ESP32-CAM white on-board LED (flash) connected to GPIO 4
-    pinMode(4, OUTPUT);
-    digitalWrite(4, LOW);
-    rtc_gpio_hold_en(GPIO_NUM_4);
-
-    delay(2000);
-    esp_deep_sleep_start();
+    go_to_deep_sleep()
 }
 
 void loop() {
