@@ -71,48 +71,30 @@ void setup() {
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
-
-    if (psramFound()) {
-        config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
-        config.jpeg_quality = 10;
-        config.fb_count = 2;
-    }
-    else {
-        config.frame_size = FRAMESIZE_SVGA;
-        config.jpeg_quality = 12;
-        config.fb_count = 1;
-    }
+    config.frame_size = FRAMESIZE_UXGA; // FRAMESIZE_ + QVGA|CIF|VGA|SVGA|XGA|SXGA|UXGA
+    config.jpeg_quality = 10;
+    config.fb_count = 2;
 
     // Init Camera
-    esp_err_t err = esp_camera_init(&config);
-    if (err != ESP_OK) {
-        return;
-    }
+    if (esp_err_t err = esp_camera_init(&config); err != ESP_OK) return;
 
     // Serial.println("Starting SD Card");
-    if (!SD_MMC.begin()) {
-        return;
-    }
+    if (!SD_MMC.begin()) return;
 
-    uint8_t cardType = SD_MMC.cardType();
-    if (cardType == CARD_NONE) {
-        return;
-    }
+    if (uint8_t cardType = SD_MMC.cardType(); cardType == CARD_NONE) return;
 
     camera_fb_t *fb = NULL;
 
     // Take Picture with Camera
     fb = esp_camera_fb_get();
-    if (!fb) {
-        return;
-    }
+    if (!fb) return;
 
     // Path where new picture will be saved in SD Card
     String path = "/picture" + String(pictureNumber) + ".jpg";
 
     fs::FS &fs = SD_MMC;
-
     File file = fs.open(path.c_str(), FILE_WRITE);
+    
     if (file) {
         file.write(fb->buf, fb->len); // payload (image), payload length
     }
