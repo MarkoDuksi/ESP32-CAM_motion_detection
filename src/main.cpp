@@ -24,10 +24,7 @@
 #include "soc/soc.h"          // Disable brownour problems
 #include "soc/rtc_cntl_reg.h" // Disable brownour problems
 #include "driver/rtc_io.h"
-#include <EEPROM.h> // read and write from flash memory
 
-// define the number of bytes you want to access
-#define EEPROM_SIZE 1
 
 // Pin definition for CAMERA_MODEL_AI_THINKER
 #define PWDN_GPIO_NUM 32
@@ -117,9 +114,6 @@ void setup() {
         Serial.println("Camera capture failed");
         return;
     }
-    // initialize EEPROM with predefined size
-    EEPROM.begin(EEPROM_SIZE);
-    pictureNumber = EEPROM.read(0) + 1;
 
     // Path where new picture will be saved in SD Card
     String path = "/picture" + String(pictureNumber) + ".jpg";
@@ -134,8 +128,6 @@ void setup() {
     else {
         file.write(fb->buf, fb->len); // payload (image), payload length
         Serial.printf("Saved file to path: %s\n", path.c_str());
-        EEPROM.write(0, pictureNumber);
-        EEPROM.commit();
     }
     file.close();
     esp_camera_fb_return(fb);
