@@ -50,10 +50,6 @@ int pictureNumber = 0;
 void setup() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
 
-    Serial.begin(115200);
-    // Serial.setDebugOutput(true);
-    // Serial.println();
-
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
     config.ledc_timer = LEDC_TIMER_0;
@@ -90,19 +86,16 @@ void setup() {
     // Init Camera
     esp_err_t err = esp_camera_init(&config);
     if (err != ESP_OK) {
-        Serial.printf("Camera init failed with error 0x%x", err);
         return;
     }
 
     // Serial.println("Starting SD Card");
     if (!SD_MMC.begin()) {
-        Serial.println("SD Card Mount Failed");
         return;
     }
 
     uint8_t cardType = SD_MMC.cardType();
     if (cardType == CARD_NONE) {
-        Serial.println("No SD Card attached");
         return;
     }
 
@@ -111,7 +104,6 @@ void setup() {
     // Take Picture with Camera
     fb = esp_camera_fb_get();
     if (!fb) {
-        Serial.println("Camera capture failed");
         return;
     }
 
@@ -119,15 +111,10 @@ void setup() {
     String path = "/picture" + String(pictureNumber) + ".jpg";
 
     fs::FS &fs = SD_MMC;
-    Serial.printf("Picture file name: %s\n", path.c_str());
 
     File file = fs.open(path.c_str(), FILE_WRITE);
-    if (!file) {
-        Serial.println("Failed to open file in writing mode");
-    }
-    else {
+    if (file) {
         file.write(fb->buf, fb->len); // payload (image), payload length
-        Serial.printf("Saved file to path: %s\n", path.c_str());
     }
     file.close();
     esp_camera_fb_return(fb);
@@ -138,10 +125,7 @@ void setup() {
     rtc_gpio_hold_en(GPIO_NUM_4);
 
     delay(2000);
-    Serial.println("Going to sleep now");
-    delay(2000);
     esp_deep_sleep_start();
-    Serial.println("This will never be printed");
 }
 
 void loop() {
