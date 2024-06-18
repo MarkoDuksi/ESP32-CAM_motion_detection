@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "esp_camera.h"
 #include "SD_MMC.h"
+#include "FS.h"
 
 #include "peripherals.h"
 
@@ -25,7 +26,7 @@
 #define PCLK_GPIO_NUM 22
 
 
-bool peripherals::camera::init() {
+[[nodiscard]] bool peripherals::camera::init() {
     camera_config_t config;
 
     config.ledc_channel = LEDC_CHANNEL_0;
@@ -55,7 +56,22 @@ bool peripherals::camera::init() {
     return esp_camera_init(&config) == ESP_OK;
 }
 
-bool peripherals::SD_card::init() {
-    if (SD_MMC.begin() && SD_MMC.cardType() != CARD_NONE) return true;
+[[nodiscard]] bool peripherals::SD_card::init() {
+    if (SD_MMC.begin() && SD_MMC.cardType() != CARD_NONE) {
+        return true;
+    }
+
     return false;
+}
+
+size_t peripherals::SD_card::write_bytes(const char* path, const uint8_t* buff, size_t buff_size) {
+
+    if (File file = SD_MMC.open(path, "w"); file) {
+        const size_t bytes_written = file.write(buff, buff_size);
+        file.close();
+
+        return bytes_written;
+    }
+
+    return 0;
 }

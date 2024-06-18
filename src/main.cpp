@@ -42,23 +42,21 @@ void go_to_deep_sleep () {
 void setup() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
 
-    if (!peripherals::camera::init()) go_to_deep_sleep();
-    if (!peripherals::SD_card::init()) go_to_deep_sleep();
-
-    // Take Picture with Camera
-    camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb) go_to_deep_sleep();
-
-    fs::FS &fs = SD_MMC;
-
-    // Path where new picture will be saved in SD Card
-    String path = "/picture" + String(pictureNumber) + ".jpg";
-    File file = fs.open(path.c_str(), FILE_WRITE);
-    
-    if (file) {
-        file.write(fb->buf, fb->len); // payload (image), payload length
+    if (!peripherals::camera::init()) {
+        go_to_deep_sleep();
     }
-    file.close();
+
+    if (!peripherals::SD_card::init()) {
+        go_to_deep_sleep();
+    }
+
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb) {
+        go_to_deep_sleep();
+    }
+
+    peripherals::SD_card::write_bytes("/picture1.jpg", fb->buf, fb->len);
+
     esp_camera_fb_return(fb);
 
     go_to_deep_sleep();
