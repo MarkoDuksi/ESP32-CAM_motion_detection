@@ -27,6 +27,7 @@
 
 
 [[nodiscard]] bool peripherals::camera::init() {
+
     camera_config_t config;
 
     config.ledc_channel = LEDC_CHANNEL_0;
@@ -57,6 +58,7 @@
 }
 
 [[nodiscard]] bool peripherals::SD_card::init() {
+
     if (SD_MMC.begin() && SD_MMC.cardType() != CARD_NONE) {
         return true;
     }
@@ -66,7 +68,7 @@
 
 size_t peripherals::SD_card::write_bytes(const char* path, const uint8_t* buff, size_t buff_size) {
 
-    if (File file = SD_MMC.open(path, "w"); file) {
+    if (File file = SD_MMC.open(path, FILE_WRITE); file) {
         const size_t bytes_written = file.write(buff, buff_size);
         file.close();
 
@@ -74,4 +76,32 @@ size_t peripherals::SD_card::write_bytes(const char* path, const uint8_t* buff, 
     }
 
     return 0;
+}
+
+bool peripherals::SD_card::write_as_pgm(const char* path, const uint8_t* const buff, const uint16_t width_px, const uint16_t height_px) {
+
+    if (File file = SD_MMC.open(path, FILE_WRITE); file) {
+        file.print("P2\n");
+        static const String header = String(width_px) + " " + String(height_px) + " " + String(255) + "\n";
+        file.print(header);
+
+        size_t idx = 0;
+        for (uint16_t row = 0; row < height_px; ++row) {
+
+            for (uint16_t col = 0; col < width_px; ++col) {
+
+                const String pixel_value_plus_space = String(buff[idx++]) + " ";
+                file.print(pixel_value_plus_space.c_str());
+            }
+
+            file.print("\n");
+        }
+        file.print("\n");
+
+        file.close();
+
+        return true;
+    }
+
+    return false;
 }
