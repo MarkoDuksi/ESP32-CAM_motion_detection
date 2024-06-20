@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Arduino.h"
+#include <stdint.h>
+#include <sys/types.h>
 
 
 namespace peripherals::camera {
