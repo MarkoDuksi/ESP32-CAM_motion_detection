@@ -37,14 +37,16 @@ void setup() {
 
 void loop() {
 
-    static uint16_t picture_number = 1;
+    static uint16_t picture_counter = 1;
 
+    // capture one frame and obtain the buffer to jpeg compressed data
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
         enter_deep_sleep();
     }
 
-    const String output_path_jpg = "/orig_" + String(picture_number) + ".jpg";
+    // write the original jpeg image to SD card for reference
+    const String output_path_jpg = "/orig_" + String(picture_counter) + ".jpg";
     peripherals::SD_card::write_bytes(output_path_jpg.c_str(), fb->buf, fb->len);
 
     static constexpr uint16_t orig_width = 1600;
@@ -54,15 +56,20 @@ void loop() {
     static const mdjpeg::BoundingBox frame_boundaries(0, 0, one_eight_width, one_eight_height);
     static uint8_t dest_buff[one_eight_width * one_eight_height];
 
+    // decompress the luma channel, ignoring AC coefficients
+    // resulting image array is one eight of width and height of the original
     static mdjpeg::JpegDecoder jpeg_decoder;
     jpeg_decoder.assign(fb->buf, fb->len);
     jpeg_decoder.dc_luma_decode(dest_buff, frame_boundaries);
+    
+    // let go of the camera frame buffer
     esp_camera_fb_return(fb);
 
-    const String output_path_png = "/dc_luma_" + String(picture_number) + ".png";
-    if (!peripherals::SD_card::write_as_pgm(output_path_png.c_str(), dest_buff, one_eight_width, one_eight_height)) enter_deep_sleep();
+    // write the downscaled luma image to SD card as PGM image for inspection
+    const String output_path_pgm = "/dc_luma_" + String(picture_counter) + ".pgm";
+    if (!peripherals::SD_card::write_as_pgm(output_path_pgm.c_str(), dest_buff, one_eight_width, one_eight_height)) enter_deep_sleep();
 
-    ++picture_number;
+    ++picture_counter;
 
     delay(2000);
 }
